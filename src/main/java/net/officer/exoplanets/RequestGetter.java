@@ -59,7 +59,6 @@ public class RequestGetter {
     }
 
     private static void getRequest(String url, String name) throws IOException, URISyntaxException {
-
         URI request = new URI(url);
         BufferedReader in = new BufferedReader(new InputStreamReader(request.toURL().openStream()));
         String inputLine;
@@ -75,5 +74,4 @@ public class RequestGetter {
         }
         in.close();
     }
-
 }
