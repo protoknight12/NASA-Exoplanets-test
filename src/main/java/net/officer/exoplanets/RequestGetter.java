@@ -16,23 +16,12 @@ public class RequestGetter {
         System.out.println("Enter the planet name: ");
         String planetName = userInput.nextLine();
 
-        // Format the url and prepare for extraction
-        String url = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=SELECT+pl_name,+hostname,+pl_orbsmax,+pl_orbincl,+st_mass,+st_rad,+ra,+dec+FROM+ps+WHERE+pl_name=%27" + URLEncoder.encode(planetName, StandardCharsets.UTF_8) + "%27&format=json";
-        URI request = new URI(url);
-        BufferedReader in = new BufferedReader(new InputStreamReader(request.toURL().openStream()));
-        String inputLine;
-        File file = new File("src/main/resources/data/" + planetName + ".json");
-        StringBuilder contents = new StringBuilder();
-
-        // Extract the info
-        while ((inputLine = in.readLine()) != null) {
-            contents.append(inputLine);
-            try (Writer writer = new FileWriter(file)) {
-                writer.write(String.valueOf(contents));
-            }
-        }
-        in.close();
-        averagePlanetInfo(planetName);
+        // Format the planetUrl and prepare for extraction
+        String planetUrl = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=SELECT+pl_name,+hostname,+pl_orbsmax,+pl_orbincl,+pl_rade,+pl_bmasse,+pl_dens,+pl_eqt,+pl_imppar,+pl_rvamp+FROM+ps+WHERE+pl_name=%27" + URLEncoder.encode(planetName, StandardCharsets.UTF_8) + "%27&format=json";
+        String starUrl = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=SELECT+hostname,+ra,+dec,+st_rad,+st_mass,+st_age,+st_dens,+st_rotp,+st_teff+FROM+stellarhosts+WHERE+hostname=%27" + URLEncoder.encode("WASP-12", StandardCharsets.UTF_8) + "%27&format=json";
+        getRequest(planetUrl,planetName);
+        getRequest(starUrl,"WASP-12");
+        //averagePlanetInfo(planetName);
     }
 
     private static void averagePlanetInfo(String planetName) {
@@ -49,7 +38,7 @@ public class RequestGetter {
                 JsonObject planet = new JsonObject();
                 planet.addProperty("planet_name", planetName);
                 planet.addProperty("hostname", hostName);
-                for(var entry : valuesMap.entrySet()) {
+                for (var entry : valuesMap.entrySet()) {
                     double avg = entry.getValue().stream().mapToDouble(Double::doubleValue).average().orElse(Double.NaN);
                     planet.addProperty(entry.getKey(), avg);
                 }
@@ -68,4 +57,23 @@ public class RequestGetter {
     private static List<Double> getDoubles(JsonArray array, String key) {
         return array.asList().stream().map(JsonElement::getAsJsonObject).map(obj -> obj.has(key) && !obj.get(key).isJsonNull() ? obj.get(key).getAsDouble() : null).filter(Objects::nonNull).toList();
     }
+
+    private static void getRequest(String url, String name) throws IOException, URISyntaxException {
+
+        URI request = new URI(url);
+        BufferedReader in = new BufferedReader(new InputStreamReader(request.toURL().openStream()));
+        String inputLine;
+        File file = new File("src/main/resources/data/planets/" + name + ".json");
+        StringBuilder contents = new StringBuilder();
+
+        // Extract the info
+        while ((inputLine = in.readLine()) != null) {
+            contents.append(inputLine);
+            try (Writer writer = new FileWriter(file)) {
+                writer.write(String.valueOf(contents));
+            }
+        }
+        in.close();
+    }
+
 }
