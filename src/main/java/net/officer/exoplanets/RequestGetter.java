@@ -15,12 +15,8 @@ public class RequestGetter {
         Scanner userInput = new Scanner(System.in);
         System.out.println("Enter the planet name: ");
         String planetName = userInput.nextLine();
+        String starName = "";
 
-        // Format the planetUrl and prepare for extraction
-        String planetUrl = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=SELECT+pl_name,+hostname,+pl_orbsmax,+pl_orbincl,+pl_rade,+pl_bmasse,+pl_dens,+pl_eqt,+pl_imppar,+pl_rvamp+FROM+ps+WHERE+pl_name=%27" + URLEncoder.encode(planetName, StandardCharsets.UTF_8) + "%27&format=json";
-        String starUrl = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=SELECT+hostname,+ra,+dec,+st_rad,+st_mass,+st_age,+st_dens,+st_rotp,+st_teff+FROM+stellarhosts+WHERE+hostname=%27" + URLEncoder.encode("WASP-12", StandardCharsets.UTF_8) + "%27&format=json";
-        getRequest(planetUrl,planetName);
-        getRequest(starUrl,"WASP-12");
         //averagePlanetInfo(planetName);
     }
 
@@ -58,11 +54,29 @@ public class RequestGetter {
         return array.asList().stream().map(JsonElement::getAsJsonObject).map(obj -> obj.has(key) && !obj.get(key).isJsonNull() ? obj.get(key).getAsDouble() : null).filter(Objects::nonNull).toList();
     }
 
-    private static void getRequest(String url, String name) throws IOException, URISyntaxException {
-        URI request = new URI(url);
+    private static void getRequestPlanet(String name) throws IOException, URISyntaxException {
+        String planetUrl = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=SELECT+pl_name,+hostname,+pl_orbsmax,+pl_orbincl,+pl_rade,+pl_bmasse,+pl_dens,+pl_eqt,+pl_imppar,+pl_rvamp+FROM+ps+WHERE+pl_name=%27" + URLEncoder.encode(name, StandardCharsets.UTF_8) + "%27&format=json";
+        URI request = new URI(planetUrl);
         BufferedReader in = new BufferedReader(new InputStreamReader(request.toURL().openStream()));
         String inputLine;
         File file = new File("src/main/resources/data/planets/" + name + ".json");
+        StringBuilder contents = new StringBuilder();
+
+        // Extract the info
+        while ((inputLine = in.readLine()) != null) {
+            contents.append(inputLine);
+            try (Writer writer = new FileWriter(file)) {
+                writer.write(String.valueOf(contents));
+            }
+        }
+        in.close();
+    }
+    private static void getRequestStar(String name) throws IOException, URISyntaxException {
+        String starUrl = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=SELECT+hostname,+ra,+dec,+st_rad,+st_mass,+st_age,+st_dens,+st_rotp,+st_teff+FROM+stellarhosts+WHERE+hostname=%27" + URLEncoder.encode(name, StandardCharsets.UTF_8) + "%27&format=json";
+        URI request = new URI(starUrl);
+        BufferedReader in = new BufferedReader(new InputStreamReader(request.toURL().openStream()));
+        String inputLine;
+        File file = new File("src/main/resources/data/stars/" + name + ".json");
         StringBuilder contents = new StringBuilder();
 
         // Extract the info
